@@ -183,7 +183,6 @@ class HomeEdgeApp:
 
     if "app" not in st.session_state:
         st.session_state.app = HomeEdgeApp()
-        st.session_state.app.start()
 
     def initialize_session_state(self):
         """Initialize Streamlit session state variables"""
@@ -338,38 +337,6 @@ class HomeEdgeApp:
             st.session_state.app.stop()
             st.info("Threat detection process stopped")
 
-    def simulate_threat_detection(self):
-        """Simulate a threat detection for testing"""
-        threat_types = ['person', 'motion', 'sound', 'anomaly']
-        threat_type = random.choice(threat_types)
-        confidence = random.uniform(0.70, 0.95)
-        
-        fake_detection = {
-            'timestamp': time.time(),
-            'threat_detected': True,
-            'threat_type': threat_type,
-            'confidence': confidence,
-            'bounding_boxes': [
-                {
-                    'x': random.randint(50, 200), 
-                    'y': random.randint(50, 150), 
-                    'width': random.randint(100, 200), 
-                    'height': random.randint(150, 300), 
-                    'label': threat_type, 
-                    'confidence': confidence
-                }
-            ],
-            'performance_metrics': {
-                'fps': random.randint(20, 30),
-                'latency': random.randint(30, 60),
-                'npu_usage': random.randint(70, 95)
-            },
-            'audio_data': {
-                'audio_levels': [random.uniform(0.1, 0.9) for _ in range(20)]
-            }
-        }
-        
-        self.handle_ml_detection_result(fake_detection)
 
     def render_popup_alert(self):
         """Render popup alert for threats"""
@@ -437,7 +404,8 @@ class HomeEdgeApp:
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): # Removed emoji
+            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"):
+                st.session_state.app.start()
                 st.session_state.detection_running = True
                 detection = {"threat_type": "intruder"}
                 report = st.session_state.app.handle_ml_detection_result(detection)
@@ -463,11 +431,7 @@ class HomeEdgeApp:
         
         with col2:
             if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): # Removed emoji
-                self.stop_detection_process()
-        
-        with col3:
-            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): # Removed emoji
-                self.simulate_threat_detection()
+                st.session_state.app.stop()
         
         with col4:
             status_class = "detection-running" if st.session_state.detection_running else "detection-stopped"
