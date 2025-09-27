@@ -688,7 +688,7 @@ class HomeEdgeApp:
             st.info("No alerts detected. System monitoring active.")
             return
         
-        for alert in st.session_state.alerts[:5]:  # Show only top 5 alerts
+        for alert in st.session_state.alerts[:5]:
             with st.container():
                 st.markdown(f"""
                 <div class="metric-card">
