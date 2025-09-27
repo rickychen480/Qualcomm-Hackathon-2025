@@ -10,6 +10,8 @@ import base64
 from io import BytesIO
 import random
 import os
+from backend import HomeEdgeApp
+from buffer import ShadowReplay
 
 # Try to import optional dependencies
 try:
@@ -178,7 +180,11 @@ class HomeEdgeApp:
         self.detection_queue = queue.Queue()
         self.ml_detector = None
         self.detection_thread = None
-        
+
+    if "app" not in st.session_state:
+        st.session_state.app = HomeEdgeApp()
+        st.session_state.app.start()
+
     def initialize_session_state(self):
         """Initialize Streamlit session state variables"""
         if 'current_page' not in st.session_state:
@@ -319,16 +325,17 @@ class HomeEdgeApp:
         if len(st.session_state.archived_reports) > 100:
             st.session_state.archived_reports.pop()
 
-    def start_detection_process(self):
-        """Start the threat detection process"""
-        if not st.session_state.detection_running:
-            st.session_state.detection_running = True
-            st.success("Threat detection process started")
+    # def start_detection_process(self):
+    #     """Start the threat detection process"""
+    #     if not st.session_state.detection_running:
+    #         st.session_state.detection_running = True
+    #         st.success("Threat detection process started")
 
     def stop_detection_process(self):
         """Stop the threat detection process"""
         if st.session_state.detection_running:
             st.session_state.detection_running = False
+            st.session_state.app.stop()
             st.info("Threat detection process stopped")
 
     def simulate_threat_detection(self):
@@ -426,14 +433,33 @@ class HomeEdgeApp:
         Removes: Camera Feed, Storage Status, Audio Monitor.
         """
         
-        st.subheader("Threat Detection Status & Manual Control") # Removed emoji
-        
         # 1. Detection Control
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): # Removed emoji
-                self.start_detection_process()
+                st.session_state.detection_running = True
+                detection = {"threat_type": "intruder"}
+                report = st.session_state.app.handle_ml_detection_result(detection)
+                
+                st.success("Threat detected and report generated!")
+
+                # Display report details
+                st.subheader("Threat Report")
+                st.write(f"**Type:** {report['threat_type']}")
+                st.write(f"**Time:** {report['timestamp']}")
+                st.write(f"**Severity:** {report['severity']}")
+                st.write(f"**Description:** {report['description']}")
+                st.write("**Actions Taken:**")
+                for action in report['actions_taken']:
+                    st.write(f"- {action}")
+
+                # Show video if exists
+                video_path = report.get("video_path")
+                if video_path and os.path.exists(video_path):
+                    st.video(video_path)
+                else:
+                    st.info("No video available.")    
         
         with col2:
             if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): # Removed emoji

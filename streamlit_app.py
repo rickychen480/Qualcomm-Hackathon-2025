@@ -13,6 +13,7 @@ if st.button("Simulate Threat"):
     report = st.session_state.app.handle_ml_detection_result(detection)
     
     st.success("Threat detected and report generated!")
+    
 
     # Display report details
     st.subheader("Threat Report")

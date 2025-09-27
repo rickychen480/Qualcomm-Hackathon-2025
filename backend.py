@@ -31,6 +31,7 @@ class HomeEdgeApp:
         print("[Backend] Handling detection result...")
         self.recorder.save_replay()
         video_path = self.find_latest_video()
+        self.recorder.stop()
 
         report = {
             "threat_type": detection.get("threat_type", "unknown"),
