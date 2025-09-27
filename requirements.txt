@@ -7,3 +7,4 @@ imageio-ffmpeg>=0.4.8
 tqdm>=4.64.0
 decorator>=5.1.0
 sounddevice>=0.4.7
+streamlit>=1.0
