@@ -39,7 +39,7 @@ except ImportError:
 # Configure Streamlit page
 st.set_page_config(
     page_title="HomeEdge Security Assistant",
-    page_icon="Shield", # Removed emoji
+    page_icon="Shield",
     layout="wide",
     initial_sidebar_state="expanded"
 )
