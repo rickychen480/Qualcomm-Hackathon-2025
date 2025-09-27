@@ -367,33 +367,34 @@ class HomeEdgeApp:
         self.handle_ml_detection_result(fake_detection)
 
     def render_popup_alert(self):
-        """Render popup alert for threats"""
+        """Render popup alert for threats using Streamlit-native button."""
         if st.session_state.show_popup_alert and st.session_state.popup_alert_data:
             alert = st.session_state.popup_alert_data
-            
-            # Create popup using Streamlit's modal-like container
+
             with st.container():
                 st.markdown(f"""
-                <div class="threat-alert" id="popup-alert">
+                <div class="threat-alert">
                     <h3>THREAT DETECTED</h3>
                     <p><strong>Type:</strong> {alert['type'].upper()}</p>
                     <p><strong>Confidence:</strong> {alert['confidence']:.1%}</p>
                     <p><strong>Time:</strong> {alert['timestamp'].strftime('%H:%M:%S')}</p>
-                    <button onclick="document.getElementById('popup-alert').style.display='none'">
-                        Close Alert
-                    </button>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            # Auto-dismiss logic (Simplified)
+
+                # Use Streamlit button to close the alert
+                if st.button("Close Alert", key="close_alert_button"):
+                    st.session_state.show_popup_alert = False
+                    st.session_state.popup_alert_data = {}
+                    if 'alert_start_time' in st.session_state:
+                        del st.session_state.alert_start_time
+
+            # Auto-dismiss after 10 seconds
             if 'alert_start_time' not in st.session_state:
                 st.session_state.alert_start_time = time.time()
-            
-            if time.time() - st.session_state.alert_start_time > 10:
+            elif time.time() - st.session_state.alert_start_time > 10:
                 st.session_state.show_popup_alert = False
                 st.session_state.popup_alert_data = {}
-                if 'alert_start_time' in st.session_state:
-                    del st.session_state.alert_start_time
+                del st.session_state.alert_start_time
 
     def render_header(self):
         """Render the main header"""
