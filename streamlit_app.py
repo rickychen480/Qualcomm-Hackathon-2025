@@ -17,3 +17,5 @@ if st.button("Simulate Threat"):
     video_path = result.get("video_path")
     if video_path and os.path.exists(video_path):
         st.video(video_path)
+
+# kind of need actual audio/videos, but tried simulating a threat with a pop up
