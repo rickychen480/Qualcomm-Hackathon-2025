@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from backend import HomeEdgeApp  # Your backend class
+from backend import HomeEdgeApp
 
 # Initialize app backend once
 if "app" not in st.session_state:
