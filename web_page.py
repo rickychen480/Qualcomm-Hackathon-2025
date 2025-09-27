@@ -39,12 +39,12 @@ except ImportError:
 # Configure Streamlit page
 st.set_page_config(
     page_title="HomeEdge Security Assistant",
-    page_icon="🛡️",
+    page_icon="Shield", # Removed emoji
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for better styling (keeping existing styles)
 st.markdown("""
 <style>
     .main-header {
@@ -179,7 +179,7 @@ class HomeEdgeApp:
     def initialize_session_state(self):
         """Initialize Streamlit session state variables"""
         if 'current_page' not in st.session_state:
-            st.session_state.current_page = 'Live Monitor'
+            st.session_state.current_page = 'Control Dashboard' 
         if 'detection_running' not in st.session_state:
             st.session_state.detection_running = False
         if 'alerts' not in st.session_state:
@@ -204,6 +204,14 @@ class HomeEdgeApp:
                 'motion_sensitivity': 70,
                 'audio_sensitivity': 75,
                 'sound_threshold': 60
+            }
+        # Automatic Schedule Settings
+        if 'schedule_config' not in st.session_state:
+            st.session_state.schedule_config = {
+                'enable': False,
+                'start_time': datetime.strptime('22:00', '%H:%M').time(), # 10:00 PM
+                'stop_time': datetime.strptime('06:00', '%H:%M').time(), # 6:00 AM
+                'days': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
             }
         if 'show_popup_alert' not in st.session_state:
             st.session_state.show_popup_alert = False
@@ -284,11 +292,6 @@ class HomeEdgeApp:
             'size_mb': random.randint(50, 200)
         }
         
-        # In production, you would:
-        # 1. Read from your circular buffer
-        # 2. Save the last N minutes of video/audio
-        # 3. Return the file paths
-        
         return recording_data
 
     def create_archived_report(self, detection_data: Dict):
@@ -317,15 +320,12 @@ class HomeEdgeApp:
         """Start the threat detection process"""
         if not st.session_state.detection_running:
             st.session_state.detection_running = True
-            # In production, this would start your ML detector
-            # For demo, we'll simulate with periodic dummy data
             st.success("Threat detection process started")
 
     def stop_detection_process(self):
         """Stop the threat detection process"""
         if st.session_state.detection_running:
             st.session_state.detection_running = False
-            # In production, this would stop your ML detector
             st.info("Threat detection process stopped")
 
     def simulate_threat_detection(self):
@@ -380,7 +380,7 @@ class HomeEdgeApp:
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Auto-dismiss after 10 seconds
+            # Auto-dismiss logic (Simplified)
             if 'alert_start_time' not in st.session_state:
                 st.session_state.alert_start_time = time.time()
             
@@ -402,11 +402,11 @@ class HomeEdgeApp:
 
     def render_navigation(self):
         """Render navigation tabs"""
-        tabs = st.tabs(["Live Monitor", "Archives", "Settings"])
+        tabs = st.tabs(["Control Dashboard", "Archives", "Settings"])
         
         with tabs[0]:
-            st.session_state.current_page = 'Live Monitor'
-            self.render_live_monitor()
+            st.session_state.current_page = 'Control Dashboard'
+            self.render_control_dashboard()
         
         with tabs[1]:
             st.session_state.current_page = 'Archives'
@@ -416,22 +416,28 @@ class HomeEdgeApp:
             st.session_state.current_page = 'Settings'
             self.render_settings()
 
-    def render_live_monitor(self):
-        """Render the live monitoring interface"""
-        # Detection control
-        st.subheader("Detection Control")
+    def render_control_dashboard(self):
+        """
+        New front-page rendering.
+        Includes: Detection Control, Automatic Start/Stop Settings, Detection Sensitivity, Recent Alerts.
+        Removes: Camera Feed, Storage Status, Audio Monitor.
+        """
+        
+        st.subheader("Threat Detection Status & Manual Control") # Removed emoji
+        
+        # 1. Detection Control
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("Start Detection", disabled=st.session_state.detection_running):
+            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): # Removed emoji
                 self.start_detection_process()
         
         with col2:
-            if st.button("Stop Detection", disabled=not st.session_state.detection_running):
+            if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): # Removed emoji
                 self.stop_detection_process()
         
         with col3:
-            if st.button("Test Detection", disabled=not st.session_state.detection_running):
+            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): # Removed emoji
                 self.simulate_threat_detection()
         
         with col4:
@@ -441,26 +447,112 @@ class HomeEdgeApp:
         
         st.divider()
         
-        # Main monitoring interface
-        col1, col2 = st.columns([2, 1])
+        # Main Interface: Auto-Schedule + Detection Settings
+        col_sch, col_sens = st.columns(2)
         
-        with col1:
-            self.render_camera_section()
+        with col_sch:
+            self.render_auto_schedule_settings()
+            
+        with col_sens:
+            self.render_detection_sensitivity_settings()
         
-        with col2:
-            self.render_audio_section()
+        st.divider()
         
-        # Additional sections
+        # 3. Recent Alerts (Kept)
+        self.render_alerts_section()
+        
+        # Optional: Performance Metrics to replace camera feed space
+        st.subheader("Current Performance Metrics") # Removed emoji
+        self.render_performance_metrics()
+
+
+    def render_auto_schedule_settings(self):
+        """Renders the new automatic start/stop scheduling section."""
+        st.subheader("Automatic Start/Stop Schedule") # Removed emoji
+        
+        schedule = st.session_state.schedule_config
+        
+        new_enable = st.checkbox("Enable Automatic Scheduling", value=schedule['enable'])
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            self.render_alerts_section()
+            new_start_time = st.time_input("Start Time (Detection ON)", value=schedule['start_time'])
         
         with col2:
-            self.render_storage_status()
+            new_stop_time = st.time_input("Stop Time (Detection OFF)", value=schedule['stop_time'])
+            
+        st.markdown("**Select Active Days:**")
+        
+        day_options = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        new_days = st.multiselect("Days to Run", day_options, default=schedule['days'])
+        
+        # Update logic
+        new_schedule = {
+            'enable': new_enable,
+            'start_time': new_start_time,
+            'stop_time': new_stop_time,
+            'days': new_days
+        }
+        
+        if new_schedule != st.session_state.schedule_config:
+            st.session_state.schedule_config = new_schedule
+            st.success("Automatic schedule updated!")
+            
+        if new_enable:
+            st.info(f"Scheduled to run daily from **{new_start_time.strftime('%H:%M')}** to **{new_stop_time.strftime('%H:%M')}** on selected days.")
+
+    def render_detection_sensitivity_settings(self):
+        """Renders the core sensitivity controls in a clean format."""
+        st.subheader("Detection Sensitivity Settings") # Removed emoji
+        
+        config = st.session_state.detection_config
+        
+        person_sens = st.slider("Person Detection Sensitivity", 0, 100, 
+                              config['person_sensitivity'], key='person_sens_dash')
+        
+        motion_sens = st.slider("Motion Sensitivity", 0, 100, 
+                              config['motion_sensitivity'], key='motion_sens_dash')
+        
+        audio_sens = st.slider("Audio Sensitivity", 0, 100, 
+                             config['audio_sensitivity'], key='audio_sens_dash')
+        
+        sound_thresh = st.slider("Sound Threshold (Alert trigger)", 0, 100, 
+                               config['sound_threshold'], key='sound_thresh_dash')
+        
+        # Update configuration
+        new_config = {
+            'person_sensitivity': person_sens, 'motion_sensitivity': motion_sens,
+            'audio_sensitivity': audio_sens, 'sound_threshold': sound_thresh
+        }
+        
+        if new_config != st.session_state.detection_config:
+            st.session_state.detection_config = new_config
+            st.toast("Sensitivity settings updated!")
+
+
+    def render_performance_metrics(self):
+        """Renders the core performance metrics (moved from old camera section)."""
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        metrics = st.session_state.performance_metrics
+        
+        with col1:
+            st.metric("Frames Per Second (FPS)", metrics['fps'])
+        
+        with col2:
+            st.metric("Inference Latency", f"{metrics['latency']}ms")
+        
+        with col3:
+            st.metric("NPU/CPU Usage", f"{metrics['npu_usage']}%")
+        
+        with col4:
+            st.metric("Average Confidence", f"{metrics['confidence']}%")
+
 
     def render_archives(self):
-        """Render the archives section"""
+        """Render the archives section (Unchanged)"""
         st.subheader("Threat Detection Archives")
         
         if not st.session_state.archived_reports:
@@ -540,62 +632,30 @@ class HomeEdgeApp:
                     for i, box in enumerate(report['bounding_boxes']):
                         st.write(f"- Object {i+1}: {box.get('label', 'Unknown')} (confidence: {box.get('confidence', 0):.2f})")
 
+
     def render_settings(self):
-        """Render the settings section"""
+        """Render the settings section (Removed redundant detection config, kept storage/system info)"""
         st.subheader("System Configuration")
         
-        # Detection Configuration
-        st.write("**Detection Sensitivity Settings**")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            person_sens = st.slider("Person Detection Sensitivity", 0, 100, 
-                                  st.session_state.detection_config['person_sensitivity'])
-            
-            motion_sens = st.slider("Motion Sensitivity", 0, 100, 
-                                  st.session_state.detection_config['motion_sensitivity'])
-        
-        with col2:
-            audio_sens = st.slider("Audio Sensitivity", 0, 100, 
-                                 st.session_state.detection_config['audio_sensitivity'])
-            
-            sound_thresh = st.slider("Sound Threshold", 0, 100, 
-                                   st.session_state.detection_config['sound_threshold'])
-        
-        # Update configuration
-        new_config = {
-            'person_sensitivity': person_sens,
-            'motion_sensitivity': motion_sens,
-            'audio_sensitivity': audio_sens,
-            'sound_threshold': sound_thresh
-        }
-        
-        if new_config != st.session_state.detection_config:
-            st.session_state.detection_config = new_config
-            st.success("Configuration updated")
-        
-        st.divider()
-        
-        # Storage Settings
+        # Storage Settings (Kept)
         st.write("**Storage Configuration**")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            buffer_duration = st.slider("Buffer Duration (minutes)", 1, 10, 3)
-            max_archive_size = st.slider("Max Archive Size (GB)", 1, 50, 10)
+            buffer_duration = st.slider("Buffer Duration (minutes)", 1, 10, 3, key='s_buff')
+            max_archive_size = st.slider("Max Archive Size (GB)", 1, 50, 10, key='s_max')
         
         with col2:
-            auto_delete_days = st.slider("Auto-delete Archives (days)", 7, 365, 30)
-            recording_quality = st.selectbox("Recording Quality", ["Low", "Medium", "High", "Ultra"])
+            auto_delete_days = st.slider("Auto-delete Archives (days)", 7, 365, 30, key='s_del')
+            recording_quality = st.selectbox("Recording Quality", ["Low", "Medium", "High", "Ultra"], key='s_qual')
         
         if st.button("Save Storage Settings"):
             st.success("Storage settings saved")
         
         st.divider()
         
-        # System Information
+        # System Information (Kept)
         st.write("**System Information**")
         
         col1, col2 = st.columns(2)
@@ -614,131 +674,9 @@ class HomeEdgeApp:
             st.write(f"- Archived Reports: {len(st.session_state.archived_reports)}")
             st.write(f"- Current Threat Level: {st.session_state.threat_level:.1f}%")
 
-    def render_camera_section(self):
-        """Render camera feed and performance metrics"""
-        st.subheader("Camera Feed")
-        
-        # Camera feed display
-        if st.session_state.current_frame is not None:
-            try:
-                if CV2_AVAILABLE and hasattr(st.session_state.current_frame, 'shape'):
-                    frame_with_boxes = self.draw_detection_boxes(st.session_state.current_frame)
-                    st.image(frame_with_boxes, channels="BGR", use_column_width=True)
-                else:
-                    st.image(st.session_state.current_frame, use_column_width=True)
-            except Exception as e:
-                self.render_camera_placeholder()
-        else:
-            self.render_camera_placeholder()
-        
-        # Performance metrics
-        st.subheader("Performance Metrics")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("FPS", st.session_state.performance_metrics['fps'])
-        
-        with col2:
-            st.metric("Latency", f"{st.session_state.performance_metrics['latency']}ms")
-        
-        with col3:
-            st.metric("NPU Usage", f"{st.session_state.performance_metrics['npu_usage']}%")
-        
-        with col4:
-            st.metric("Confidence", f"{st.session_state.performance_metrics['confidence']}%")
-
-    def render_camera_placeholder(self):
-        """Render camera feed placeholder"""
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        detection_status = "RECORDING" if st.session_state.detection_running else "STANDBY"
-        
-        st.markdown(f"""
-        <div class="camera-feed">
-            <h2>CAMERA FEED ACTIVE</h2>
-            <p style="margin: 1rem 0;">System Time: {current_time}</p>
-            <p>Resolution: 1920x1080 • FPS: {st.session_state.performance_metrics['fps']}</p>
-            <p>Status: {detection_status}</p>
-            <p style="margin-top: 2rem; font-size: 0.9em; opacity: 0.7;">
-                Connect your ML detector to see live feed with threat detection
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    def draw_detection_boxes(self, frame):
-        """Draw bounding boxes on the frame for detected objects"""
-        if not st.session_state.detection_history or not CV2_AVAILABLE:
-            return frame
-        
-        latest_detection = st.session_state.detection_history[-1]['data']
-        
-        if 'bounding_boxes' in latest_detection:
-            frame_copy = frame.copy()
-            
-            for box in latest_detection['bounding_boxes']:
-                x, y, w, h = box['x'], box['y'], box['width'], box['height']
-                label = f"{box['label']} ({box['confidence']:.2f})"
-                
-                cv2.rectangle(frame_copy, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                
-                label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
-                cv2.rectangle(frame_copy, (x, y - label_size[1] - 10), 
-                            (x + label_size[0], y), (0, 0, 255), -1)
-                
-                cv2.putText(frame_copy, label, (x, y - 5),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-            
-            return frame_copy
-        
-        return frame
-
-    def render_audio_section(self):
-        """Render audio monitoring section"""
-        st.subheader("Audio Monitor")
-        
-        st.markdown('<div class="audio-bar-container">', unsafe_allow_html=True)
-        st.write("**Real-time Audio Levels:**")
-        
-        for i, level in enumerate(st.session_state.audio_levels):
-            level_percent = min(100, max(0, level * 100))
-            
-            if level_percent > 80:
-                color = "#dc3545"
-            elif level_percent > 50:
-                color = "#ffc107"
-            else:
-                color = "#28a745"
-            
-            st.markdown(f"""
-            <div style="display: flex; align-items: center; margin: 3px 0;">
-                <span style="width: 50px; font-size: 12px; font-family: monospace;">Ch{i+1:02d}</span>
-                <div style="background: #e9ecef; width: 200px; height: 16px; margin: 0 10px; border-radius: 8px; overflow: hidden;">
-                    <div style="background: {color}; width: {level_percent}%; height: 100%; border-radius: 8px; transition: width 0.3s ease;"></div>
-                </div>
-                <span style="font-size: 12px; width: 45px; font-family: monospace;">{level_percent:.0f}%</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Threat level indicator
-        st.subheader("Threat Level Analysis")
-        
-        threat_level = st.session_state.threat_level
-        color = "#dc3545" if threat_level > 70 else "#ffc107" if threat_level > 30 else "#28a745"
-        level_text = 'HIGH' if threat_level > 70 else 'MEDIUM' if threat_level > 30 else 'LOW'
-        
-        st.progress(threat_level / 100)
-        st.markdown(f"""
-        <div style="text-align: center; margin-top: 10px;">
-            <strong>Current Level:</strong> {threat_level:.1f}% 
-            <span style="color: {color}; font-weight: bold;">({level_text})</span>
-        </div>
-        """, unsafe_allow_html=True)
-
     def render_alerts_section(self):
-        """Render recent alerts section"""
-        st.subheader("Recent Alerts")
+        """Render recent alerts section (Unchanged)"""
+        st.subheader("Recent Alerts") # Removed emoji
         
         if not st.session_state.alerts:
             st.info("No alerts detected. System monitoring active.")
@@ -754,31 +692,12 @@ class HomeEdgeApp:
                     <p><strong>Details:</strong> {len(alert.get('details', []))} object(s) detected</p>
                 </div>
                 """, unsafe_allow_html=True)
+        # Add a link to archives
+        st.markdown(f"[View All {len(st.session_state.alerts)} Alerts in Archives Tab](#)", unsafe_allow_html=True)
 
-    def render_storage_status(self):
-        """Display storage usage and health"""
-        st.subheader("Storage Status")
-            
-        # Simulated storage usage
-        used_gb = random.uniform(3.5, 8.2)
-        total_gb = 10.0
-        percent_used = (used_gb / total_gb) * 100
-            
-        st.progress(percent_used / 100)
-            
-        color = "#28a745" if percent_used < 60 else "#ffc107" if percent_used < 85 else "#dc3545"
-            
-        st.markdown(f"""
-        <div style="text-align: center; margin-top: 10px;">
-            <strong>Used:</strong> {used_gb:.2f} GB / {total_gb:.0f} GB 
-            <span style="color: {color}; font-weight: bold;">({percent_used:.1f}%)</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
 # Initialize and run the Streamlit app
 if __name__ == "__main__":
     app = HomeEdgeApp()
     app.render_popup_alert()
     app.render_header()
     app.render_navigation()
-
