@@ -13,6 +13,14 @@ class ShadowReplay:
     """
     A class to continuously record video and audio into a buffer, allowing for
     the last 'n' seconds to be saved on command.
+
+    Sample usage:
+        recorder = ShadowReplay(record_seconds=5)
+        recorder.start()
+        time.sleep(15)
+        recorder.save_replay()
+        time.sleep(10)
+        recorder.stop()
     """
 
     def __init__(
