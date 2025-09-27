@@ -5,6 +5,7 @@ from buffer import ShadowReplay
 
 class HomeEdgeApp:
     def __init__(self):
+        """Initialize the HomeEdge application and start recording."""
         self.recorder = ShadowReplay(record_seconds=5)
 
     def start(self):
