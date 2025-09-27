@@ -1,5 +1,5 @@
 import cv2
-import sounddevice
+import sounddevice  # Unused import necessary to ensure pyaudio import works correctly
 import pyaudio
 import wave
 import threading
