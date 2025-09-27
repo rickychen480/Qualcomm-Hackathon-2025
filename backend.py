@@ -30,11 +30,18 @@ class HomeEdgeApp:
         print("[Backend] Handling detection result...")
         save_replay()
         video_path = self.find_latest_video()
-        print(f"[Backend] Saved replay: {video_path}")
-        return {
-            "threat_type": result.get("threat_type", "unknown"),
+        # Generate a simple report dict
+        report = {
+            "threat_type": detection.get("threat_type", "unknown"),
+            "timestamp": "2025-09-27 14:30:00",  # You can use datetime.now()
             "video_path": video_path,
+            "description": f"Detected threat: {detection.get('threat_type', 'unknown')}. Immediate attention required.",
+            "severity": "high",
+            "actions_taken": ["Alert sent to homeowner", "Video recorded"]
         }
+            
+        # Return report for frontend use
+        return report
 
     def find_latest_video(self):
         """Returns latest replay file path"""
