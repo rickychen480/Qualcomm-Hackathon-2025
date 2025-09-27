@@ -83,7 +83,7 @@ class ShadowReplay:
             else:
                 print("Error: Could not read frame from camera.")
                 break
-        
+
         cap.release()
 
     def _audio_recorder(self):
@@ -150,7 +150,6 @@ class ShadowReplay:
             if os.path.exists(temp_audio_path):
                 os.remove(temp_audio_path)
 
-
     def start(self):
         """Starts the video and audio recording threads."""
         if self.is_running:
@@ -204,10 +203,11 @@ class ShadowReplay:
 
         # Create and start the thread for saving
         save_thread = threading.Thread(
-            target=self._perform_save,
-            args=(video_frames, audio_chunks, output_path)
+            target=self._perform_save, args=(video_frames, audio_chunks, output_path)
         )
-        save_thread.daemon = True  # Allows main program to exit even if thread is running
+        save_thread.daemon = (
+            True  # Allows main program to exit even if thread is running
+        )
         save_thread.start()
         print(f"Save command received. Replay will be saved in the background.")
 

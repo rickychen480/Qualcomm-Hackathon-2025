@@ -3,6 +3,7 @@ import threading
 import time
 from buffer import ShadowReplay
 
+
 class HomeEdgeApp:
     def __init__(self):
         """Initialize the HomeEdge application and start recording."""
@@ -20,6 +21,7 @@ class HomeEdgeApp:
 
     def detection_loop(self):
         """Simulate detection every 15 seconds (replace with actual model)"""
+        # TODO: Integrate actual ML model here
         while True:
             time.sleep(15)
             print("[Detection] Threat detected!")
@@ -36,7 +38,7 @@ class HomeEdgeApp:
             "video_path": video_path,
             "description": f"Detected threat: {detection.get('threat_type', 'unknown')}. Immediate attention required.",
             "severity": "high",
-            "actions_taken": ["Alert sent to homeowner", "Video recorded"]
+            "actions_taken": ["Alert sent to homeowner", "Video recorded"],
         }
 
         print(f"[Backend] Report generated: {report}")
@@ -44,22 +46,17 @@ class HomeEdgeApp:
 
     def find_latest_video(self):
         """Finds the latest saved replay file"""
-        files = [f for f in os.listdir() if f.startswith("replay_") and f.endswith(".mp4")]
+        # TODO: Decide how to store previous recording files
+        files = [
+            f for f in os.listdir() if f.startswith("replay_") and f.endswith(".mp4")
+        ]
         if not files:
             return None
         return max(files, key=os.path.getctime)
 
     def stop(self):
-        """Gracefully stop recording threads (optional)"""
-        if self.recording_started:
-            print("[Backend] Stopping recording threads...")
-            self.recorder.stop()
-            if self.video_thread:
-                self.video_thread.join()
-            if self.audio_thread:
-                self.audio_thread.join()
-            self.recording_started = False
-            print("[Backend] Recording stopped.")
+        """Gracefully stop the application and recording."""
+        self.recorder.stop()
 
 
 if __name__ == "__main__":
