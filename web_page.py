@@ -39,24 +39,29 @@ except ImportError:
 # Configure Streamlit page
 st.set_page_config(
     page_title="HomeEdge Security Assistant",
-    page_icon="Shield",
+    page_icon="Shield", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling (keeping existing styles)
+# Custom CSS for better styling
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(90deg, #1e3c72, #2a5298);
         padding: 1.5rem;
         border-radius: 10px;
-        color: white;
+        color: white; /* This sets the general text color inside the div to white */
         text-align: center;
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
+    /* NEW ADDITION: Ensure the H1 tag itself is white, overriding any Streamlit default */
+    .main-header h1 {
+        color: white !important; 
+    }
+
     .threat-alert {
         background: linear-gradient(90deg, #ff4444, #cc0000);
         padding: 1rem;
@@ -392,6 +397,7 @@ class HomeEdgeApp:
 
     def render_header(self):
         """Render the main header"""
+        # The CSS ensures the H1 element inside this div is white
         st.markdown("""
         <div class="main-header">
             <h1>HomeEdge Security Assistant</h1>
@@ -423,21 +429,21 @@ class HomeEdgeApp:
         Removes: Camera Feed, Storage Status, Audio Monitor.
         """
         
-        st.subheader("Threat Detection Status & Manual Control") # Removed emoji
+        st.subheader("Threat Detection Status & Manual Control") 
         
         # 1. Detection Control
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): # Removed emoji
+            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): 
                 self.start_detection_process()
         
         with col2:
-            if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): # Removed emoji
+            if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): 
                 self.stop_detection_process()
         
         with col3:
-            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): # Removed emoji
+            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): 
                 self.simulate_threat_detection()
         
         with col4:
@@ -462,13 +468,13 @@ class HomeEdgeApp:
         self.render_alerts_section()
         
         # Optional: Performance Metrics to replace camera feed space
-        st.subheader("Current Performance Metrics") # Removed emoji
+        st.subheader("Current Performance Metrics") 
         self.render_performance_metrics()
 
 
     def render_auto_schedule_settings(self):
         """Renders the new automatic start/stop scheduling section."""
-        st.subheader("Automatic Start/Stop Schedule") # Removed emoji
+        st.subheader("Automatic Start/Stop Schedule") 
         
         schedule = st.session_state.schedule_config
         
@@ -504,7 +510,7 @@ class HomeEdgeApp:
 
     def render_detection_sensitivity_settings(self):
         """Renders the core sensitivity controls in a clean format."""
-        st.subheader("Detection Sensitivity Settings") # Removed emoji
+        st.subheader("Detection Sensitivity Settings") 
         
         config = st.session_state.detection_config
         
@@ -676,7 +682,7 @@ class HomeEdgeApp:
 
     def render_alerts_section(self):
         """Render recent alerts section (Unchanged)"""
-        st.subheader("Recent Alerts") # Removed emoji
+        st.subheader("Recent Alerts") 
         
         if not st.session_state.alerts:
             st.info("No alerts detected. System monitoring active.")
@@ -701,4 +707,3 @@ if __name__ == "__main__":
     app.render_popup_alert()
     app.render_header()
     app.render_navigation()
-    # test
