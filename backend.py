@@ -46,13 +46,14 @@ class HomeEdgeApp:
 
     def find_latest_video(self):
         """Finds the latest saved replay file"""
-        # TODO: Decide how to store previous recording files
         files = [
-            f for f in os.listdir(self.recorder.output_dir) if f.endswith(".mp4")
+            os.path.join(self.recorder.output_dir, f)
+            for f in os.listdir(self.recorder.output_dir)
+            if f.endswith(".mp4")
         ]
         if not files:
             return None
-        return os.path.join(self.recorder.output_dir, max(files, key=os.path.getctime))
+        return max(files, key=os.path.getctime)
 
     def stop(self):
         """Gracefully stop the application and recording."""
