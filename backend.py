@@ -48,7 +48,7 @@ class HomeEdgeApp:
         """Finds the latest saved replay file"""
         # TODO: Decide how to store previous recording files
         files = [
-            f for f in os.listdir() if f.startswith("replay_") and f.endswith(".mp4")
+            f for f in os.listdir(self.recorder.output_dir) if f.endswith(".mp4")
         ]
         if not files:
             return None
