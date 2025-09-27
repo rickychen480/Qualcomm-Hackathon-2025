@@ -51,6 +51,8 @@ class ShadowReplay:
         self.fps = fps
         self.frame_width = frame_width
         self.frame_height = frame_height
+        self.output_dir = "recordings"  # Directory for final replays
+        self.temp_dir = ".tmp"  # Hidden directory for temporary files
 
         # --- Audio Settings ---
         self.format = pyaudio.paInt16
@@ -107,11 +109,17 @@ class ShadowReplay:
     def _perform_save(self, video_frames, audio_chunks, output_path):
         """The actual file-saving logic. This is run in a separate thread."""
 
-        # --- Generate file paths ---
+        # --- Create hidden temp directory ---
+        os.makedirs(self.temp_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        # --- Generate temporary file paths ---
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        temp_video_path = f"temp_video_{timestamp}.mp4"
-        temp_audio_path = f"temp_audio_{timestamp}.wav"
-        output_path = output_path or f"replay_{timestamp}.mp4"
+        temp_video_path = os.path.join(self.temp_dir, f"temp_video_{timestamp}.mp4")
+        temp_audio_path = os.path.join(self.temp_dir, f"temp_audio_{timestamp}.wav")
+        print(output_path)
+        output_path = output_path or os.path.join(self.output_dir, f"replay_{timestamp}.mp4")
+        print(temp_video_path, temp_audio_path, output_path)
 
         # --- Save video frames to a temporary file ---
         fourcc = cv2.VideoWriter_fourcc(*"avc1")
@@ -181,7 +189,7 @@ class ShadowReplay:
         """Returns the most recent frame from the video buffer for display."""
         return self.video_buffer[-1] if self.video_buffer else None
 
-    def save_replay(self, output_filename=None):
+    def save_replay(self, output_path=None):
         """
         Saves the contents of the buffers to a final combined MP4 file.
 
@@ -197,9 +205,6 @@ class ShadowReplay:
         if not video_frames or not audio_chunks:
             print("Buffers are empty. Nothing to save.")
             return
-
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_path = output_filename or f"replay_{timestamp}.mp4"
 
         # Create and start the thread for saving
         save_thread = threading.Thread(
