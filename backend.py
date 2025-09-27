@@ -52,7 +52,7 @@ class HomeEdgeApp:
         ]
         if not files:
             return None
-        return max(files, key=os.path.getctime)
+        return os.path.join(self.recorder.output_dir, max(files, key=os.path.getctime))
 
     def stop(self):
         """Gracefully stop the application and recording."""
