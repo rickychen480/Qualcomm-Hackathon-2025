@@ -12,7 +12,7 @@ from moviepy import VideoFileClip, AudioFileClip
 class ShadowReplay:
     """
     A class to continuously record video and audio into a buffer, allowing for
-    the last 'n' seconds to be saved on command. This is often called "shadow recording."
+    the last 'n' seconds to be saved on command.
     """
 
     def __init__(
@@ -184,8 +184,8 @@ class ShadowReplay:
         """
 
         # Copy buffer content to prevent modification during save
-        video_frames = list(self.video_buffer)
         audio_chunks = list(self.audio_buffer)
+        video_frames = list(self.video_buffer)
 
         if not video_frames or not audio_chunks:
             print("Buffers are empty. Nothing to save.")
