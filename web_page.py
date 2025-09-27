@@ -39,29 +39,27 @@ except ImportError:
 # Configure Streamlit page
 st.set_page_config(
     page_title="HomeEdge Security Assistant",
-    page_icon="Shield", 
+    page_icon="Shield", # Removed emoji
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for better styling (keeping existing styles)
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(90deg, #1e3c72, #2a5298);
         padding: 1.5rem;
         border-radius: 10px;
-        color: white; /* This sets the general text color inside the div to white */
+        color: white;
         text-align: center;
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    
-    /* NEW ADDITION: Ensure the H1 tag itself is white, overriding any Streamlit default */
     .main-header h1 {
-        color: white !important; 
+        color: white !important;
     }
-
+    
     .threat-alert {
         background: linear-gradient(90deg, #ff4444, #cc0000);
         padding: 1rem;
@@ -367,38 +365,36 @@ class HomeEdgeApp:
         self.handle_ml_detection_result(fake_detection)
 
     def render_popup_alert(self):
-        """Render popup alert for threats using Streamlit-native button."""
+        """Render popup alert for threats"""
         if st.session_state.show_popup_alert and st.session_state.popup_alert_data:
             alert = st.session_state.popup_alert_data
-
+            
+            # Create popup using Streamlit's modal-like container
             with st.container():
                 st.markdown(f"""
-                <div class="threat-alert">
+                <div class="threat-alert" id="popup-alert">
                     <h3>THREAT DETECTED</h3>
                     <p><strong>Type:</strong> {alert['type'].upper()}</p>
                     <p><strong>Confidence:</strong> {alert['confidence']:.1%}</p>
                     <p><strong>Time:</strong> {alert['timestamp'].strftime('%H:%M:%S')}</p>
+                    <button onclick="document.getElementById('popup-alert').style.display='none'">
+                        Close Alert
+                    </button>
                 </div>
                 """, unsafe_allow_html=True)
-
-                # Use Streamlit button to close the alert
-                if st.button("Close Alert", key="close_alert_button"):
-                    st.session_state.show_popup_alert = False
-                    st.session_state.popup_alert_data = {}
-                    if 'alert_start_time' in st.session_state:
-                        del st.session_state.alert_start_time
-
-            # Auto-dismiss after 10 seconds
+            
+            # Auto-dismiss logic (Simplified)
             if 'alert_start_time' not in st.session_state:
                 st.session_state.alert_start_time = time.time()
-            elif time.time() - st.session_state.alert_start_time > 10:
+            
+            if time.time() - st.session_state.alert_start_time > 10:
                 st.session_state.show_popup_alert = False
                 st.session_state.popup_alert_data = {}
-                del st.session_state.alert_start_time
+                if 'alert_start_time' in st.session_state:
+                    del st.session_state.alert_start_time
 
     def render_header(self):
         """Render the main header"""
-        # The CSS ensures the H1 element inside this div is white
         st.markdown("""
         <div class="main-header">
             <h1>HomeEdge Security Assistant</h1>
@@ -430,21 +426,21 @@ class HomeEdgeApp:
         Removes: Camera Feed, Storage Status, Audio Monitor.
         """
         
-        st.subheader("Threat Detection Status & Manual Control") 
+        st.subheader("Threat Detection Status & Manual Control") # Removed emoji
         
         # 1. Detection Control
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): 
+            if st.button("**Start Detection**", disabled=st.session_state.detection_running, use_container_width=True, type="primary"): # Removed emoji
                 self.start_detection_process()
         
         with col2:
-            if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): 
+            if st.button("**Stop Detection**", disabled=not st.session_state.detection_running, use_container_width=True, type="secondary"): # Removed emoji
                 self.stop_detection_process()
         
         with col3:
-            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): 
+            if st.button("**Test Alert**", disabled=not st.session_state.detection_running, use_container_width=True): # Removed emoji
                 self.simulate_threat_detection()
         
         with col4:
@@ -469,13 +465,13 @@ class HomeEdgeApp:
         self.render_alerts_section()
         
         # Optional: Performance Metrics to replace camera feed space
-        st.subheader("Current Performance Metrics") 
+        st.subheader("Current Performance Metrics") # Removed emoji
         self.render_performance_metrics()
 
 
     def render_auto_schedule_settings(self):
         """Renders the new automatic start/stop scheduling section."""
-        st.subheader("Automatic Start/Stop Schedule") 
+        st.subheader("Automatic Start/Stop Schedule") # Removed emoji
         
         schedule = st.session_state.schedule_config
         
@@ -511,7 +507,7 @@ class HomeEdgeApp:
 
     def render_detection_sensitivity_settings(self):
         """Renders the core sensitivity controls in a clean format."""
-        st.subheader("Detection Sensitivity Settings") 
+        st.subheader("Detection Sensitivity Settings") # Removed emoji
         
         config = st.session_state.detection_config
         
@@ -683,13 +679,13 @@ class HomeEdgeApp:
 
     def render_alerts_section(self):
         """Render recent alerts section (Unchanged)"""
-        st.subheader("Recent Alerts") 
+        st.subheader("Recent Alerts") # Removed emoji
         
         if not st.session_state.alerts:
             st.info("No alerts detected. System monitoring active.")
             return
         
-        for alert in st.session_state.alerts[:5]:
+        for alert in st.session_state.alerts[:5]:  # Show only top 5 alerts
             with st.container():
                 st.markdown(f"""
                 <div class="metric-card">
@@ -708,3 +704,4 @@ if __name__ == "__main__":
     app.render_popup_alert()
     app.render_header()
     app.render_navigation()
+    # test
