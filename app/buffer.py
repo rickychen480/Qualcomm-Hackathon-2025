@@ -1,7 +1,5 @@
 import av
 import cv2
-import sounddevice
-import pyaudio
 import wave
 import threading
 import collections
@@ -12,183 +10,131 @@ from moviepy import VideoFileClip, AudioFileClip
 
 class ShadowReplay:
     """
-    A class to continuously record video and audio into a buffer, allowing for
-    the last 'n' seconds to be saved on command.
-
-    Sample usage:
-        recorder = ShadowReplay(record_seconds=5)
-        recorder.start()
-        time.sleep(15)
-        recorder.save_replay()
-        time.sleep(10)
-        recorder.stop()
+    A class to continuously record video and audio from a streamlit-webrtc stream
+    into a buffer, allowing for the last 'n' seconds to be saved on command.
     """
 
-    def __init__(
-        self,
-        record_seconds=15,
-        camera_index=0,
-        fps=30.0,
-        frame_width=640,
-        frame_height=480,
-        channels=1,
-        rate=44100,
-    ):
+    def __init__(self, record_seconds=15, fps=30.0):
         """
-        Initializes the recorder with specified configurations.
+        Initializes the recorder for a WebRTC stream.
 
         Args:
             record_seconds (int): The duration of the buffer in seconds.
-            camera_index (int): The index of the camera to use.
-            fps (float): The frames per second for video recording.
-            frame_width (int): The width of the video frame.
-            frame_height (int): The height of the video frame.
-            channels (int): The number of audio channels.
-            rate (int): The audio sampling rate.
+            fps (float): The target frames per second for video recording.
         """
         # --- Configurations ---
         self.record_seconds = record_seconds
-        self.camera_index = camera_index
         self.fps = fps
-        self.frame_width = frame_width
-        self.frame_height = frame_height
-        self.output_dir = "recordings"  # Directory for final replays
-        self.temp_dir = ".tmp"  # Hidden directory for temporary files
+        self.output_dir = "recordings"
+        self.temp_dir = ".tmp"
 
-        # --- Audio Settings ---
-        self.format = pyaudio.paInt16
-        self.channels = channels
-        self.rate = rate
-        self.chunk = 1024  # Audio samples per frame
+        # --- WebRTC Audio Standard ---
+        # streamlit-webrtc typically sends audio frames of 1024 samples at 48000 Hz
+        webrtc_audio_rate = 48000
+        samples_per_frame = 1024
+        audio_frames_per_second = webrtc_audio_rate / samples_per_frame
 
         # --- Buffers and Thread Control ---
         buffer_video_frames = int(self.record_seconds * self.fps)
-        buffer_audio_chunks = int(self.record_seconds * self.rate / self.chunk)
+        buffer_audio_frames = int(self.record_seconds * audio_frames_per_second) # Corrected buffer size calculation
         self.video_buffer = collections.deque(maxlen=buffer_video_frames)
-        self.audio_buffer = collections.deque(maxlen=buffer_audio_chunks)
+        self.audio_buffer = collections.deque(maxlen=buffer_audio_frames)
 
-        self.stop_event = threading.Event()
-        self.video_thread = None
-        self.audio_thread = None
+        self.audio_lock = threading.Lock()
         self.is_running = False
 
     def recv_video(self, frame: av.VideoFrame) -> av.VideoFrame:
-        """
-        Callback for streamlit-webrtc to receive video frames from the browser.
-        """
-        # The frame is an av.VideoFrame. Convert it to a NumPy array (BGR format).
+        """Callback to receive video frames from the browser."""
         image = frame.to_ndarray(format="bgr24")
         self.video_buffer.append(image)
-        return frame # Return the frame to display it in the browser
+        return frame
 
     def recv_audio(self, frame: av.AudioFrame) -> av.AudioFrame:
-        """
-        Callback for streamlit-webrtc to receive audio frames from the browser.
-        """
-        # The frame is an av.AudioFrame. Convert to raw bytes.
-        # Resample to the format expected by the wave module.
+        """Callback to receive audio frames from the browser."""
         with self.audio_lock:
+            # Each plane in the audio frame is a chunk of audio data
             for p in frame.planes:
-                print('AUDIO_RECEIVED')
                 self.audio_buffer.append(p.to_bytes())
         return frame
 
     def _perform_save(self, video_frames, audio_chunks, output_path):
-        """The actual file-saving logic. This is run in a separate thread."""
-
-        # --- Create hidden temp directory ---
+        """The actual file-saving logic, now more robust."""
         os.makedirs(os.path.join(os.getcwd(), self.temp_dir), exist_ok=True)
         os.makedirs(os.path.join(os.getcwd(), self.output_dir), exist_ok=True)
 
-        # --- Generate temporary file paths ---
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         temp_video_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_video_{timestamp}.mp4")
-        temp_audio_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_audio_{timestamp}.wav")
         output_path = output_path or os.path.join(os.getcwd(), self.output_dir, f"replay_{timestamp}.mp4")
 
-        # --- Save video frames to a temporary file ---
-        # Get frame dimensions from the first frame to ensure consistency.
+        # --- Save video frames ---
         if not video_frames:
-            print("Error: Video frame buffer is empty, cannot save.")
+            print("Error: Video buffer is empty. Cannot save.")
             return
         frame_height, frame_width, _ = video_frames[0].shape
         fourcc = cv2.VideoWriter_fourcc(*"avc1")
-        out = cv2.VideoWriter(
-            temp_video_path, fourcc, len(video_frames) // self.record_seconds, (frame_width, frame_height)
-        )
+        out = cv2.VideoWriter(temp_video_path, fourcc, self.fps, (frame_width, frame_height))
         for frame in video_frames:
             out.write(frame)
         out.release()
 
-        # --- Save audio chunks to a temporary file ---
-        wf = wave.open(temp_audio_path, "wb")
-        wf.setnchannels(self.channels)
-        wf.setsampwidth(pyaudio.PyAudio().get_sample_size(self.format))
-        wf.setframerate(self.rate)
-        wf.writeframes(b"".join(audio_chunks))
-        wf.close()
+        # --- Save audio chunks (ONLY IF AUDIO EXISTS) ---
+        temp_audio_path = None
+        if audio_chunks:
+            temp_audio_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_audio_{timestamp}.wav")
+            with wave.open(temp_audio_path, "wb") as wf:
+                wf.setnchannels(1)      # WebRTC is typically mono
+                wf.setsampwidth(2)      # 16-bit PCM audio
+                wf.setframerate(48000)  # Standard WebRTC audio rate
+                wf.writeframes(b"".join(audio_chunks))
+        else:
+            print("Warning: No audio data in buffer. Saving video without audio.")
 
-        # --- Combine video and audio using MoviePy ---
+        # --- Combine files and clean up resources ---
+        video_clip = audio_clip = final_clip = None
         try:
             video_clip = VideoFileClip(temp_video_path)
-            audio_clip = AudioFileClip(temp_audio_path)
-            video_clip.audio = audio_clip
-            video_clip.write_videofile(
-                output_path, codec="libx264", audio_codec="aac", logger=None
-            )
+            if temp_audio_path:
+                audio_clip = AudioFileClip(temp_audio_path)
+                final_clip = video_clip.set_audio(audio_clip)
+            else:
+                final_clip = video_clip # No audio to combine
+
+            final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
             print(f"Replay saved successfully to {output_path}")
 
         except Exception as e:
             print(f"Error combining files: {e}")
 
         finally:
-            # Clean up temporary files
+            # **Crucial:** Close all clips to release file locks
+            if final_clip: final_clip.close()
+            if video_clip: video_clip.close()
+            if audio_clip: audio_clip.close()
+            
             if os.path.exists(temp_video_path):
                 os.remove(temp_video_path)
-            if os.path.exists(temp_audio_path):
+            if temp_audio_path and os.path.exists(temp_audio_path):
                 os.remove(temp_audio_path)
 
     def start(self):
-        """Starts the video and audio recording threads."""
-        # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = True
         print("Shadow Replay is now active and ready to receive frames.")
 
     def stop(self):
-        """Stops the recording threads and cleans up resources."""
-        if not self.is_running:
-            print("Recorder is not running.")
-            return
-        # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = False
         print("Shadow Replay has been stopped.")
 
     def get_latest_frame(self):
-        """Returns the most recent frame from the video buffer for display."""
         return self.video_buffer[-1] if self.video_buffer else None
 
     def save_replay(self, output_path=None):
-        """
-        Saves the contents of the buffers to a final combined MP4 file.
-
-        Args:
-            output_filename (str, optional): The path for the output file.
-                If None, a timestamped filename is generated.
-        """
-
-        # Copy buffer content to prevent modification during save
-        audio_chunks = list(self.audio_buffer)
-        video_frames = list(self.video_buffer)
-
-        if not video_frames and not audio_chunks:
+        if not self.video_buffer and not self.audio_buffer:
             print("Buffers are empty. Nothing to save.")
             return
 
-        # Create and start the thread for saving
         save_thread = threading.Thread(
-            target=self._perform_save, args=(video_frames, audio_chunks, output_path)
+            target=self._perform_save,
+            args=(list(self.video_buffer), list(self.audio_buffer), output_path)
         )
-        save_thread.daemon = (
-            True  # Allows main program to exit even if thread is running
-        )
+        save_thread.daemon = True
         save_thread.start()

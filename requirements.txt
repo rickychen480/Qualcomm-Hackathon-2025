@@ -1,5 +1,4 @@
 opencv-python>=4.7.0
-pyaudio>=0.2.11
 moviepy>=1.0.3
 numpy>=1.24.0
 imageio>=2.30.0
