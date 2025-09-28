@@ -117,9 +117,7 @@ class ShadowReplay:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         temp_video_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_video_{timestamp}.mp4")
         temp_audio_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_audio_{timestamp}.wav")
-        print(output_path)
         output_path = output_path or os.path.join(os.getcwd(), self.output_dir, f"replay_{timestamp}.mp4")
-        print(temp_video_path, temp_audio_path, output_path)
 
         # --- Save video frames to a temporary file ---
         fourcc = cv2.VideoWriter_fourcc(*"avc1")
@@ -214,7 +212,6 @@ class ShadowReplay:
             True  # Allows main program to exit even if thread is running
         )
         save_thread.start()
-        print(f"Save command received. Replay will be saved in the background.")
 
 
 # --- Example Usage ---

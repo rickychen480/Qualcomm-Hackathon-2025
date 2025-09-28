@@ -6,9 +6,14 @@ from backend import HomeEdgeBackend
 def initialize_session_state():
     """Initialize Streamlit session state variables"""
 
-    # Backend app instance
-    if "app" not in st.session_state:
-        st.session_state.app = HomeEdgeBackend()
+    # Storage settings
+    if "storage_settings" not in st.session_state:
+        st.session_state.storage_settings = {
+            "buffer_duration": 3,
+            "max_archive_size": 10,
+            "auto_delete_days": 30,
+            "recording_quality": "Medium",
+        }
 
     # Current page
     if "current_page" not in st.session_state:
@@ -68,3 +73,7 @@ def initialize_session_state():
         st.session_state.show_popup_alert = False
     if "popup_alert_data" not in st.session_state:
         st.session_state.popup_alert_data = {}
+    
+    # Backend app instance
+    if "app" not in st.session_state:
+        st.session_state.app = HomeEdgeBackend(st.session_state)

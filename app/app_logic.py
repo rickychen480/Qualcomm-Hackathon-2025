@@ -1,22 +1,19 @@
-import queue
-import time
+import helpers
+import os
 import streamlit as st
 from datetime import datetime
 
 
 class HomeEdgeApp:
     """Main HomeEdge Streamlit Application"""
-
-    # TODO: CONNECT ML DETECTOR BACKEND
     def __init__(self):
-        self.connect_ml_detector(None)
+        pass
 
     # TODO: ADJUST BELOW BASED ON ACTUAL DETECTION DATA
 
     def connect_ml_detector(self, ml_detector_instance):
         """Connect to your ML detector backend"""
         self.ml_detector = ml_detector_instance
-        self.detection_queue = queue.Queue()
         self.detection_thread = None
 
     def handle_ml_detection_result(self, detection_data):
@@ -80,10 +77,10 @@ class HomeEdgeApp:
         if len(st.session_state.alerts) > 100:
             st.session_state.alerts.pop()
 
-        # Create report and save recording
+        # Create and store report
         self.create_report(detection_data)
 
-        # TODO: Render report + video
+        # TODO: Render report + video + pop-up in Streamlit UI
 
         # detection = {"threat_type": "intruder"}
         # report = st.session_state.app.handle_ml_detection_result(detection)
@@ -106,38 +103,3 @@ class HomeEdgeApp:
         #     st.video(video_path)
         # else:
         #     st.info("No video available.")
-
-    def create_archived_report(self, detection_data):
-        """Create an archived report for the threat detection"""
-        recording_data = self.trigger_recording_save(detection_data)
-        report = {
-            "id": len(st.session_state.archived_reports) + 1,
-            "timestamp": datetime.now(),
-            "threat_type": detection_data["threat_type"],
-            "confidence": detection_data["confidence"],
-            "bounding_boxes": detection_data.get("bounding_boxes", []),
-            "performance_metrics": detection_data.get("performance_metrics", {}),
-            "recording_data": recording_data,
-            "summary": f"{detection_data['threat_type'].title()} detection with {detection_data['confidence']:.1%} confidence",
-            "status": "Active",
-        }
-        st.session_state.archived_reports.insert(0, report)
-
-        # Keep only last 100 reports
-        if len(st.session_state.archived_reports) > 100:
-            st.session_state.archived_reports.pop()
-    
-    # TODO: Fill with correct data
-    def trigger_recording_save(self, detection_data):
-        """Trigger your storage system to save the last few minutes."""
-        st.app.session_state.app.recorder.save_replay()
-        recording_data = {
-            "timestamp": datetime.now(),
-            "threat_type": detection_data["threat_type"],
-            "confidence": detection_data["confidence"],
-            "duration_minutes": 3,
-            "video_path": f"storage/video_{int(time.time())}.mp4",
-            "audio_path": f"storage/audio_{int(time.time())}.wav",
-            "size_mb": 150,
-        }
-        return recording_data

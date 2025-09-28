@@ -1,4 +1,16 @@
+import os
 import streamlit as st
+
+def find_latest_video(dir_name="recordings"):
+    """Finds the latest saved replay file"""
+    files = [
+        os.path.join(dir_name, f)
+        for f in os.listdir(dir_name)
+        if f.endswith(".mp4")
+    ]
+    if not files:
+        return None
+    return max(files, key=os.path.getctime)
 
 def start_detection_process():
     """Start the threat detection process."""

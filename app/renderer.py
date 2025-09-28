@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import os
 import strings
 import helpers
 
@@ -223,11 +224,11 @@ class Renderer:
             st.metric("Average Confidence", f"{metrics['confidence']}%")
 
     # ------ ARCHIVES PAGE ------
-    # TODO: Test archives page with reports
+    @st.fragment(run_every='10s')
     def render_archives(self):
         """Render the threat detection archives section"""
         st.subheader("Threat Detection Archives")
-
+        print(f"[RENDERER] {st.session_state}")
         if not st.session_state.archived_reports:
             st.info(
                 "No archived reports available. Threat detections will appear here."
@@ -266,59 +267,28 @@ class Renderer:
         elif sort_by == "Threat Type":
             reports = sorted(reports, key=lambda x: x["threat_type"])
 
-        # Display reports
-        st.write(f"Found {len(reports)} reports")
 
-        for report in reports:
-            with st.expander(
-                f"Report #{report['id']}: {report['threat_type'].title()} - {report['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}"
-            ):
-                col1, col2 = st.columns(2)
+        # Display each report
+        for i, report in enumerate(reports):
+            with st.expander(f"Report {i+1}: {report.get('threat_type', 'Unknown Threat')} at {report.get('timestamp', 'Unknown Time')}"):
+                if isinstance(report, dict):
+                    # Display video if available
+                    video_path = report.get("video_path")
+                    if video_path and os.path.exists(video_path):
+                        st.video(video_path)
+                    else:
+                        st.warning("No video available for this report.")
 
-                with col1:
-                    st.write(f"**Threat Type:** {report['threat_type'].title()}")
-                    st.write(f"**Confidence:** {report['confidence']:.1%}")
-                    st.write(
-                        f"**Timestamp:** {report['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
-                    st.write(f"**Status:** {report['status']}")
+                    st.write(f"**Threat Type:** {report.get('threat_type', 'N/A')}")
+                    st.write(f"**Timestamp:** {report.get('timestamp', 'N/A')}")
+                    st.write(f"**Description:** {report.get('description', 'N/A')}")
+                    st.write(f"**Severity:** {report.get('severity', 'N/A')}")
 
-                with col2:
-                    st.write(
-                        f"**Objects Detected:** {len(report.get('bounding_boxes', []))}"
-                    )
-                    if report.get("performance_metrics"):
-                        metrics = report["performance_metrics"]
-                        st.write(f"**FPS:** {metrics.get('fps', 'N/A')}")
-                        st.write(f"**Latency:** {metrics.get('latency', 'N/A')}ms")
-                        st.write(f"**NPU Usage:** {metrics.get('npu_usage', 'N/A')}%")
-
-                # Recording data section
-                if report.get("recording_data"):
-                    st.write("**Recorded Media:**")
-                    recording = report["recording_data"]
-                    col1, col2, col3 = st.columns(3)
-
-                    with col1:
-                        st.write(f"Duration: {recording['duration_minutes']} minutes")
-                        st.write(f"Size: {recording['size_mb']} MB")
-
-                    with col2:
-                        # In production, these would be actual file download buttons
-                        st.button(f"Download Video", key=f"video_{report['id']}")
-                        st.button(f"Download Audio", key=f"audio_{report['id']}")
-
-                    with col3:
-                        st.button(f"Play Recording", key=f"play_{report['id']}")
-                        st.button(f"Delete Recording", key=f"delete_{report['id']}")
-
-                # Detection details
-                if report.get("bounding_boxes"):
-                    st.write("**Detection Details:**")
-                    for i, box in enumerate(report["bounding_boxes"]):
-                        st.write(
-                            f"- Object {i+1}: {box.get('label', 'Unknown')} (confidence: {box.get('confidence', 0):.2f})"
-                        )
+                    actions_taken = report.get("actions_taken", [])
+                    st.write("**Actions Taken:**")
+                    if actions_taken:
+                        for action in actions_taken:
+                            st.write(f"- {action}")
 
     # ------ SETTINGS PAGE ------
     # TODO: Apply these settings to the backend
@@ -326,11 +296,11 @@ class Renderer:
         """Render the settings section (Removed redundant detection config, kept storage/system info)"""
         st.subheader("System Configuration")
 
-        # Storage Settings (Kept)
+        # Storage Settings
         st.write("**Storage Configuration**")
 
         col1, col2 = st.columns(2)
-
+        
         with col1:
             buffer_duration = st.slider(
                 "Buffer Duration (minutes)", 1, 10, 3, key="s_buff"
@@ -338,16 +308,24 @@ class Renderer:
             max_archive_size = st.slider(
                 "Max Archive Size (GB)", 1, 50, 10, key="s_max"
             )
-
+        
         with col2:
             auto_delete_days = st.slider(
                 "Auto-delete Archives (days)", 7, 365, 30, key="s_del"
             )
             recording_quality = st.selectbox(
                 "Recording Quality", ["Low", "Medium", "High", "Ultra"], key="s_qual"
-            )
+            )            
 
         if st.button("Save Storage Settings"):
+            new_storage_settings = {
+                "buffer_duration": buffer_duration,
+                "max_archive_size": max_archive_size,
+                "auto_delete_days": auto_delete_days,
+                "recording_quality": recording_quality,
+            }
+            if st.session_state.storage_settings != new_storage_settings:
+                st.session_state.storage_settings = new_storage_settings
             st.success("Storage settings saved")
 
         st.divider()
@@ -381,4 +359,3 @@ class Renderer:
             st.session_state.popup_alert_data = {}
             if "alert_start_time" in st.session_state:
                 del st.session_state.alert_start_time
-
