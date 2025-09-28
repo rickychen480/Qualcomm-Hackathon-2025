@@ -50,6 +50,8 @@ class Renderer:
         # 3. Recent Alerts (Kept)
         self.render_alerts_section()
 
+        st.divider()
+
         # 4. Performance Metrics
         self.render_performance_metrics()
 
@@ -185,8 +187,7 @@ class Renderer:
             st.session_state.detection_config = new_config
             st.toast("Sensitivity settings updated!")
 
-    # TODO: Test with populated archives/alerts
-    # TODO: Do these alerts automatically update?
+    @st.fragment(run_every='10s')
     def render_alerts_section(self):
         """Render recent alerts section"""
         st.subheader("Recent Alerts")
@@ -195,17 +196,17 @@ class Renderer:
             st.info("No alerts detected. System monitoring active.")
             return
 
-        for alert in st.session_state.alerts[:5]:  # Show only top 5 alerts
+        for alert in reversed(st.session_state.alerts[-5:]):  # Show only recent 5 alerts
             with st.container():
                 st.markdown(strings.METRIC_CARD(alert), unsafe_allow_html=True)
 
         # Add a link to archives
         st.markdown(
-            f"[View All {len(st.session_state.alerts)} Alerts in Archives Tab](#)",
+            f"[View All {len(st.session_state.alerts)} Alerts in Archives Tab](#threat-detection-archives)",
             unsafe_allow_html=True,
         )
 
-    # TODO: Do these performance metrics automatically update?
+    @st.fragment(run_every='10s')
     def render_performance_metrics(self):
         """Renders the core performance metrics."""
 
@@ -340,7 +341,6 @@ class Renderer:
             st.write(f"- Current Threat Level: {st.session_state.threat_level:.1f}%")
 
     # ------ POPUP ALERTS ------
-    # TODO: Implement this
     @st.fragment(run_every='1s')
     def render_popup_manager(self):
         """
@@ -351,7 +351,15 @@ class Renderer:
             st.error(f"**Threat Type:** {alert_data.get('type', 'N/A').title()}")
             st.metric("Confidence", f"{alert_data.get('confidence', 0):.1%}")
             st.write(f"**Time:** {alert_data.get('timestamp', 'N/A').strftime('%Y-%m-%d %H:%M:%S')}")
+
             if st.button("Dismiss", use_container_width=True):
+                # Add to alerts history
+                st.session_state.alerts.append({
+                    "timestamp": alert_data.get('timestamp', 'N/A'),
+                    "type": alert_data.get('type', 'N/A'),
+                    "confidence": alert_data.get('confidence', 0),
+                })
+
                 self.dismiss_popup()
                 st.rerun()
 

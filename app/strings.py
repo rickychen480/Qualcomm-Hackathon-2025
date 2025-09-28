@@ -23,26 +23,12 @@ CSS = """
         animation: pulse 1s linear infinite;
         margin: 1rem 0;
         border: 2px solid #ff6666;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        min-width: 300px;
     }
     
     @keyframes pulse {
         0% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.8; transform: scale(1.02); }
         100% { opacity: 1; transform: scale(1); }
-    }
-    
-    .metric-card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #007bff;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .status-active {
@@ -132,11 +118,10 @@ MAIN_HEADER = """
 """
 
 METRIC_CARD = lambda alert: f"""
-<div class="metric-card">
+<div class="threat-alert">
     <p><strong>Time:</strong> {alert['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}</p>
     <p><strong>Type:</strong> {alert['type'].title()}</p>
     <p><strong>Confidence:</strong> {alert['confidence']:.1%}</p>
-    <p><strong>Details:</strong> {len(alert.get('details', []))} object(s) detected</p>
 </div>
 """
 
