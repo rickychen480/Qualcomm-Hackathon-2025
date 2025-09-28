@@ -30,6 +30,7 @@ class HomeEdgeBackend:
     def handle_ml_detection_result(self, detection):
         print("[Backend] Handling detection result...")
         self.recorder.save_replay()
+        time.sleep(5)  # Wait for save to complete
         video_path = self.find_latest_video()
         self.recorder.stop()
 
@@ -47,9 +48,10 @@ class HomeEdgeBackend:
 
     def find_latest_video(self):
         """Finds the latest saved replay file"""
+        recording_dir = os.path.join(os.getcwd(), self.recorder.output_dir)
         files = [
-            os.path.join(self.recorder.output_dir, f)
-            for f in os.listdir(self.recorder.output_dir)
+            os.path.join(recording_dir, f)
+            for f in os.listdir(recording_dir)
             if f.endswith(".mp4")
         ]
         if not files:

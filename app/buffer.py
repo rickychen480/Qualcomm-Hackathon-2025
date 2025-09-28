@@ -110,15 +110,15 @@ class ShadowReplay:
         """The actual file-saving logic. This is run in a separate thread."""
 
         # --- Create hidden temp directory ---
-        os.makedirs(self.temp_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(os.path.join(os.getcwd(), self.temp_dir), exist_ok=True)
+        os.makedirs(os.path.join(os.getcwd(), self.output_dir), exist_ok=True)
 
         # --- Generate temporary file paths ---
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        temp_video_path = os.path.join(self.temp_dir, f"temp_video_{timestamp}.mp4")
-        temp_audio_path = os.path.join(self.temp_dir, f"temp_audio_{timestamp}.wav")
+        temp_video_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_video_{timestamp}.mp4")
+        temp_audio_path = os.path.join(os.getcwd(), self.temp_dir, f"temp_audio_{timestamp}.wav")
         print(output_path)
-        output_path = output_path or os.path.join(self.output_dir, f"replay_{timestamp}.mp4")
+        output_path = output_path or os.path.join(os.getcwd(), self.output_dir, f"replay_{timestamp}.mp4")
         print(temp_video_path, temp_audio_path, output_path)
 
         # --- Save video frames to a temporary file ---

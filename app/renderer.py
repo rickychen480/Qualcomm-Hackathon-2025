@@ -1,254 +1,10 @@
-import queue
-import random
-import time
 import streamlit as st
+import time
 import strings
-from datetime import datetime
-from backend import HomeEdgeBackend
+import helpers
 
-# Configure Streamlit page
-st.set_page_config(
-    page_title="HomeEdge Security Assistant",
-    page_icon="Shield",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-# Custom CSS for better styling (keeping existing styles)
-st.markdown(strings.CSS, unsafe_allow_html=True)
-
-
-class HomeEdgeApp:
-    """Main HomeEdge Streamlit Application"""
-
-    # ------ SESSION STATE INITIALIZATION ------
-
-    # TODO: CONNECT ML DETECTOR BACKEND
-    def __init__(self):
-        self.initialize_session_state()
-        self.connect_ml_detector(None)
-
-    def initialize_session_state(self):
-        """Initialize Streamlit session state variables"""
-
-        # Backend app instance
-        if "app" not in st.session_state:
-            st.session_state.app = HomeEdgeBackend()
-
-        # Current page
-        if "current_page" not in st.session_state:
-            st.session_state.current_page = "Control Dashboard"
-
-        # State of detector (on/off)
-        if "detection_running" not in st.session_state:
-            st.session_state.detection_running = False
-
-        # Threat detection history
-        if "alerts" not in st.session_state:
-            st.session_state.alerts = []
-        if "archived_reports" not in st.session_state:
-            st.session_state.archived_reports = []
-        if "detection_history" not in st.session_state:
-            st.session_state.detection_history = []
-
-        # Performance metrics
-        if "performance_metrics" not in st.session_state:
-            st.session_state.performance_metrics = {
-                "fps": 24,
-                "latency": 45,
-                "npu_usage": 78,
-                "confidence": 85,
-            }
-
-        # Current levels
-        if "current_frame" not in st.session_state:
-            st.session_state.current_frame = None
-        if "audio_levels" not in st.session_state:
-            st.session_state.audio_levels = [
-                random.uniform(0.1, 0.8) for _ in range(20)
-            ]
-        if "threat_level" not in st.session_state:
-            st.session_state.threat_level = 15
-
-        # Detection sensitivity settings
-        if "detection_config" not in st.session_state:
-            st.session_state.detection_config = {
-                "person_sensitivity": 85,
-                "motion_sensitivity": 70,
-                "audio_sensitivity": 75,
-                "sound_threshold": 60,
-            }
-
-        # Automatic Schedule Settings
-        if "schedule_config" not in st.session_state:
-            st.session_state.schedule_config = {
-                "enable": False,
-                "start_time": datetime.strptime("22:00", "%H:%M").time(),  # 10:00 PM
-                "stop_time": datetime.strptime("06:00", "%H:%M").time(),  # 6:00 AM
-                "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            }
-
-        # Popup alerts
-        if "show_popup_alert" not in st.session_state:
-            st.session_state.show_popup_alert = False
-        if "popup_alert_data" not in st.session_state:
-            st.session_state.popup_alert_data = {}
-
-    # ------ ML DETECTION HANDLING ------
-    # TODO: ADJUST BELOW BASED ON ACTUAL DETECTION DATA
-
-    def connect_ml_detector(self, ml_detector_instance):
-        """Connect to your ML detector backend"""
-        self.ml_detector = ml_detector_instance
-        self.detection_queue = queue.Queue()
-        self.detection_thread = None
-
-    def handle_ml_detection_result(self, detection_data):
-        """Main method to handle ML detection results from your backend"""
-        # TODO: Accept and handle ml_detector output here
-
-        # Update performance metrics
-        if "performance_metrics" in detection_data:
-            st.session_state.performance_metrics.update(
-                detection_data["performance_metrics"]
-            )
-
-        # Update current frame
-        if "frame" in detection_data:
-            st.session_state.current_frame = detection_data["frame"]
-
-        # Handle threat detection
-        if detection_data.get("threat_detected") and st.session_state.detection_running:
-            self.process_threat_detection(detection_data)
-
-        # Update audio visualization
-        if (
-            "audio_data" in detection_data
-            and "audio_levels" in detection_data["audio_data"]
-        ):
-            st.session_state.audio_levels = detection_data["audio_data"]["audio_levels"]
-
-        # Update threat level
-        if detection_data.get("confidence"):
-            st.session_state.threat_level = detection_data["confidence"] * 100
-
-        # Store detection in history
-        st.session_state.detection_history.append(
-            {"timestamp": datetime.now(), "data": detection_data}
-        )
-
-        # Keep only last 100 detections
-        if len(st.session_state.detection_history) > 100:
-            st.session_state.detection_history.pop(0)
-
-    # ------ ML DETECTION PROCESSING ------
-    # TODO: ADJUST + TEST BELOW BASED WITH REAL/MOCKED DETECTION DATA
-
-    def process_threat_detection(self, detection_data):
-        """Process detected threats and update alerts"""
-        alert = {
-            "timestamp": datetime.now(),
-            "type": detection_data["threat_type"],
-            "confidence": detection_data["confidence"],
-            "details": detection_data.get("bounding_boxes", []),
-        }
-
-        st.session_state.alerts.insert(0, alert)
-
-        # Show popup alert
-        st.session_state.show_popup_alert = True
-        st.session_state.popup_alert_data = alert
-
-        # Keep only last 50 alerts
-        if len(st.session_state.alerts) > 50:
-            st.session_state.alerts.pop()
-
-        # Create report and save recording
-        self.create_report(detection_data)
-
-
-        # detection = {"threat_type": "intruder"}
-        # report = st.session_state.app.handle_ml_detection_result(detection)
-
-        # st.success("Threat detected and report generated!")
-
-        # # Display report details
-        # st.subheader("Threat Report")
-        # st.write(f"**Type:** {report['threat_type']}")
-        # st.write(f"**Time:** {report['timestamp']}")
-        # st.write(f"**Severity:** {report['severity']}")
-        # st.write(f"**Description:** {report['description']}")
-        # st.write("**Actions Taken:**")
-        # for action in report['actions_taken']:
-        #     st.write(f"- {action}")
-
-        # # Show video if exists
-        # video_path = report.get("video_path")
-        # if video_path and os.path.exists(video_path):
-        #     st.video(video_path)
-        # else:
-        #     st.info("No video available.")
-
-    def create_archived_report(self, detection_data):
-        """Create an archived report for the threat detection"""
-        recording_data = self.trigger_recording_save(detection_data)
-        report = {
-            "id": len(st.session_state.archived_reports) + 1,
-            "timestamp": datetime.now(),
-            "threat_type": detection_data["threat_type"],
-            "confidence": detection_data["confidence"],
-            "bounding_boxes": detection_data.get("bounding_boxes", []),
-            "performance_metrics": detection_data.get("performance_metrics", {}),
-            "recording_data": recording_data,
-            "summary": f"{detection_data['threat_type'].title()} detection with {detection_data['confidence']:.1%} confidence",
-            "status": "Active",
-        }
-        st.session_state.archived_reports.insert(0, report)
-
-        # Keep only last 100 reports
-        if len(st.session_state.archived_reports) > 100:
-            st.session_state.archived_reports.pop()
-    
-    def trigger_recording_save(self, detection_data):
-        """Trigger your storage system to save the last few minutes."""
-        st.app.session_state.app.recorder.save_replay()
-        recording_data = {
-            "timestamp": datetime.now(),
-            "threat_type": detection_data["threat_type"],
-            "confidence": detection_data["confidence"],
-            "duration_minutes": 3,  # TODO: Adjust duration time of recording
-            "video_path": f"storage/video_{int(time.time())}.mp4",
-            "audio_path": f"storage/audio_{int(time.time())}.wav",
-            "size_mb": random.randint(50, 200),
-        }
-        return recording_data
-
-
-class Helpers:
-    @staticmethod
-    def start_detection_process():
-        """Start the threat detection process"""
-        if st.session_state.detection_running:
-            return
-
-        st.session_state.detection_running = True
-        st.session_state.app.start()
-        st.success("Threat detection process started")
-
-    @staticmethod
-    def stop_detection_process():
-        """Stop the threat detection process"""
-        if not st.session_state.detection_running:
-            return
-
-        st.session_state.detection_running = False
-        st.session_state.app.stop()
-        st.info("Threat detection process stopped")
-
-
-class Renderer(HomeEdgeApp):
-    def __init__(self, app):
-        self.app = app
-
+class Renderer:
+    """Handles all Streamlit UI rendering."""
     def render_home_page(self):
         """Render the entire home page with header, navigation, and popup alerts"""
         self.render_header()
@@ -296,6 +52,7 @@ class Renderer(HomeEdgeApp):
         # 4. Performance Metrics
         self.render_performance_metrics()
 
+    # TODO: Make buttons toggle-able
     def render_detection_controls(self):
         """Render detection control buttons and status."""
 
@@ -309,7 +66,7 @@ class Renderer(HomeEdgeApp):
                 use_container_width=True,
                 type="primary",
             ):
-                Helpers.start_detection_process()
+                helpers.start_detection_process()
 
         # Stop detection button
         with col2:
@@ -319,7 +76,7 @@ class Renderer(HomeEdgeApp):
                 use_container_width=True,
                 type="secondary",
             ):
-                Helpers.stop_detection_process()
+                helpers.stop_detection_process()
 
         # On/off detection status
         with col3:
@@ -625,9 +382,3 @@ class Renderer(HomeEdgeApp):
             if "alert_start_time" in st.session_state:
                 del st.session_state.alert_start_time
 
-
-# Initialize and run the Streamlit app
-if __name__ == "__main__":
-    app = HomeEdgeApp()
-    renderer = Renderer(app)
-    renderer.render_home_page()
