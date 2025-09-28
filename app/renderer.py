@@ -1,6 +1,8 @@
 import streamlit as st
 import time
 import os
+
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 import strings
 import helpers
 
@@ -32,11 +34,26 @@ class Renderer:
             self.render_settings()
 
     # ------ CONTROL DASHBOARD PAGE ------
-
     def render_control_dashboard(self):
         """Render the control dashboard with detection controls, automatic schedule settings, recent alerts, and performance metrics"""
 
         self.render_detection_controls()
+        st.divider()
+
+        # Live Camera Feed
+        st.subheader("Start Camera Feed")
+        if st.session_state.detection_running:
+            recorder = st.session_state.app.recorder
+            webrtc_streamer(
+                key="camera-feed",
+                mode=WebRtcMode.SENDRECV,
+                video_frame_callback=recorder.recv_video,
+                media_stream_constraints={"video": True, "audio": True},
+                async_processing=True,
+            )
+        else:
+            st.info("Press 'Start Detection' and 'Start Camera Feed'")
+
         st.divider()
 
         # Main Interface: Auto-Schedule + Detection Settings
@@ -370,4 +387,3 @@ class Renderer:
         """Callback to dismiss the popup alert."""
         st.session_state.show_popup_alert = False
         st.session_state.popup_alert_data = {}
-

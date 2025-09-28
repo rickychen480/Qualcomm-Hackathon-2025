@@ -1,5 +1,6 @@
+import av
 import cv2
-import sounddevice  # Unused import necessary to ensure pyaudio import works correctly
+import sounddevice
 import pyaudio
 import wave
 import threading
@@ -71,23 +72,44 @@ class ShadowReplay:
         self.audio_thread = None
         self.is_running = False
 
-    def _video_recorder(self):
-        """Capture video frames and store them in the buffer."""
-        cap = cv2.VideoCapture(self.camera_index)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
-        cap.set(cv2.CAP_PROP_FPS, self.fps)
-        time.sleep(2)   # Allow camera to initialize
+    def recv_video(self, frame: av.VideoFrame) -> av.VideoFrame:
+        """
+        Callback for streamlit-webrtc to receive video frames from the browser.
+        """
+        # The frame is an av.VideoFrame. Convert it to a NumPy array (BGR format).
+        image = frame.to_ndarray(format="bgr24")
+        self.video_buffer.append(image)
+        return frame # Return the frame to display it in the browser
 
-        while not self.stop_event.is_set():
-            ret, frame = cap.read()
-            if ret:
-                self.video_buffer.append(frame)
-            else:
-                print("Error: Could not read frame from camera.")
-                break
+    # def recv_audio(self, frame: av.AudioFrame) -> av.AudioFrame:
+    #     """
+    #     Callback for streamlit-webrtc to receive audio frames from the browser.
+    #     """
+    #     # The frame is an av.AudioFrame. Convert to raw bytes.
+    #     # Resample to the format expected by the wave module.
+    #     with self.audio_lock:
+    #         for p in frame.planes:
+    #             print('AUDIO_RECEIVED')
+    #             self.audio_buffer.append(p.to_bytes())
+    #     return frame
 
-        cap.release()
+    # def _video_recorder(self):
+    #     """Capture video frames and store them in the buffer."""
+    #     cap = cv2.VideoCapture(self.camera_index)
+    #     cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
+    #     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
+    #     cap.set(cv2.CAP_PROP_FPS, self.fps)
+    #     time.sleep(2)   # Allow camera to initialize
+
+    #     while not self.stop_event.is_set():
+    #         ret, frame = cap.read()
+    #         if ret:
+    #             self.video_buffer.append(frame)
+    #         else:
+    #             print("Error: Could not read frame from camera.")
+    #             break
+
+    #     cap.release()
 
     def _audio_recorder(self):
         """Capture audio chunks and store them in the buffer."""
@@ -121,9 +143,14 @@ class ShadowReplay:
         output_path = output_path or os.path.join(os.getcwd(), self.output_dir, f"replay_{timestamp}.mp4")
 
         # --- Save video frames to a temporary file ---
+        # Get frame dimensions from the first frame to ensure consistency.
+        if not video_frames:
+            print("Error: Video frame buffer is empty, cannot save.")
+            return
+        frame_height, frame_width, _ = video_frames[0].shape
         fourcc = cv2.VideoWriter_fourcc(*"avc1")
         out = cv2.VideoWriter(
-            temp_video_path, fourcc, self.fps, (self.frame_width, self.frame_height)
+            temp_video_path, fourcc, len(video_frames) // self.record_seconds, (frame_width, frame_height)
         )
         for frame in video_frames:
             out.write(frame)
@@ -159,30 +186,22 @@ class ShadowReplay:
 
     def start(self):
         """Starts the video and audio recording threads."""
-        if self.is_running:
-            print("Recorder is already running.")
-            return
-
-        self.stop_event.clear()
-        self.video_thread = threading.Thread(target=self._video_recorder)
-        self.audio_thread = threading.Thread(target=self._audio_recorder)
-
-        self.video_thread.start()
-        self.audio_thread.start()
+        # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = True
-        print("Shadow recording started.")
+        self.audio_thread = threading.Thread(target=self._audio_recorder)
+        self.audio_thread.start()
+        print("Shadow Replay is now active and ready to receive frames.")
 
     def stop(self):
         """Stops the recording threads and cleans up resources."""
         if not self.is_running:
             print("Recorder is not running.")
             return
-
-        self.stop_event.set()
-        self.video_thread.join()
-        self.audio_thread.join()
+        # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = False
-        print("Shadow recording stopped.")
+        self.audio_thread.join()
+        self.stop_event.set()
+        print("Shadow Replay has been stopped.")
 
     def get_latest_frame(self):
         """Returns the most recent frame from the video buffer for display."""
@@ -213,39 +232,3 @@ class ShadowReplay:
             True  # Allows main program to exit even if thread is running
         )
         save_thread.start()
-
-
-# --- Example Usage ---
-if __name__ == "__main__":
-    # Create an instance of the recorder
-    recorder = ShadowReplay(record_seconds=5, fps=30.0)
-
-    # Start the recording threads
-    recorder.start()
-
-    print("\n--- Shadow Recording Active ---")
-    print("Press 's' to save the last 5 seconds.")
-    print("Press 'q' to quit.")
-
-    cv2.namedWindow("Webcam Feed")
-
-    while True:
-        # Display the live feed
-        frame = recorder.get_latest_frame()
-        if frame is not None:
-            cv2.imshow("Webcam Feed", frame)
-
-        key = cv2.waitKey(1) & 0xFF
-
-        # Call save_replay() when needed
-        if key == ord("s"):
-            print("\nSaving replay...")
-            recorder.save_replay()
-            print("Continuing recording...")
-
-        elif key == ord("q"):
-            break
-
-    # Stop the recorder gracefully
-    recorder.stop()
-    cv2.destroyAllWindows()
