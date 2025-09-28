@@ -4,10 +4,10 @@ import time
 from buffer import ShadowReplay
 
 
-class HomeEdgeApp:
+class HomeEdgeBackend:
     def __init__(self):
         """Initialize the HomeEdge application and start recording."""
-        self.recorder = ShadowReplay(record_seconds=5)
+        self.recorder = ShadowReplay(record_seconds=30)
 
     def start(self):
         """Start the recording and detection loop"""
@@ -62,7 +62,7 @@ class HomeEdgeApp:
 
 
 if __name__ == "__main__":
-    app = HomeEdgeApp()
+    app = HomeEdgeBackend()
     app.start()
 
     print("[System] HomeEdge backend is running.")
