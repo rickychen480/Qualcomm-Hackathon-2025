@@ -20,7 +20,6 @@ CSS = """
         color: white;
         font-weight: bold;
         text-align: center;
-        animation: pulse 1s linear infinite;
         margin: 1rem 0;
         border: 2px solid #ff6666;
     }
