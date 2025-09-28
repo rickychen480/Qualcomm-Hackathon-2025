@@ -48,6 +48,7 @@ class Renderer:
                 key="camera-feed",
                 mode=WebRtcMode.SENDRECV,
                 video_frame_callback=recorder.recv_video,
+                audio_frame_callback=recorder.recv_audio,
                 media_stream_constraints={"video": True, "audio": True},
                 async_processing=True,
             )

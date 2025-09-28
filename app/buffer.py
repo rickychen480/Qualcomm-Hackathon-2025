@@ -81,53 +81,17 @@ class ShadowReplay:
         self.video_buffer.append(image)
         return frame # Return the frame to display it in the browser
 
-    # def recv_audio(self, frame: av.AudioFrame) -> av.AudioFrame:
-    #     """
-    #     Callback for streamlit-webrtc to receive audio frames from the browser.
-    #     """
-    #     # The frame is an av.AudioFrame. Convert to raw bytes.
-    #     # Resample to the format expected by the wave module.
-    #     with self.audio_lock:
-    #         for p in frame.planes:
-    #             print('AUDIO_RECEIVED')
-    #             self.audio_buffer.append(p.to_bytes())
-    #     return frame
-
-    # def _video_recorder(self):
-    #     """Capture video frames and store them in the buffer."""
-    #     cap = cv2.VideoCapture(self.camera_index)
-    #     cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
-    #     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
-    #     cap.set(cv2.CAP_PROP_FPS, self.fps)
-    #     time.sleep(2)   # Allow camera to initialize
-
-    #     while not self.stop_event.is_set():
-    #         ret, frame = cap.read()
-    #         if ret:
-    #             self.video_buffer.append(frame)
-    #         else:
-    #             print("Error: Could not read frame from camera.")
-    #             break
-
-    #     cap.release()
-
-    def _audio_recorder(self):
-        """Capture audio chunks and store them in the buffer."""
-        p = pyaudio.PyAudio()
-        stream = p.open(
-            format=self.format,
-            channels=self.channels,
-            rate=self.rate,
-            input=True,
-            frames_per_buffer=self.chunk,
-        )
-        while not self.stop_event.is_set():
-            data = stream.read(self.chunk)
-            self.audio_buffer.append(data)
-
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
+    def recv_audio(self, frame: av.AudioFrame) -> av.AudioFrame:
+        """
+        Callback for streamlit-webrtc to receive audio frames from the browser.
+        """
+        # The frame is an av.AudioFrame. Convert to raw bytes.
+        # Resample to the format expected by the wave module.
+        with self.audio_lock:
+            for p in frame.planes:
+                print('AUDIO_RECEIVED')
+                self.audio_buffer.append(p.to_bytes())
+        return frame
 
     def _perform_save(self, video_frames, audio_chunks, output_path):
         """The actual file-saving logic. This is run in a separate thread."""
@@ -188,8 +152,6 @@ class ShadowReplay:
         """Starts the video and audio recording threads."""
         # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = True
-        self.audio_thread = threading.Thread(target=self._audio_recorder)
-        self.audio_thread.start()
         print("Shadow Replay is now active and ready to receive frames.")
 
     def stop(self):
@@ -199,8 +161,6 @@ class ShadowReplay:
             return
         # This is now a state-flipper, as the actual stream is controlled by the UI
         self.is_running = False
-        self.audio_thread.join()
-        self.stop_event.set()
         print("Shadow Replay has been stopped.")
 
     def get_latest_frame(self):
@@ -220,7 +180,7 @@ class ShadowReplay:
         audio_chunks = list(self.audio_buffer)
         video_frames = list(self.video_buffer)
 
-        if not video_frames or not audio_chunks:
+        if not video_frames and not audio_chunks:
             print("Buffers are empty. Nothing to save.")
             return
 
