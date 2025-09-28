@@ -77,6 +77,7 @@ class ShadowReplay:
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
         cap.set(cv2.CAP_PROP_FPS, self.fps)
+        time.sleep(2)   # Allow camera to initialize
 
         while not self.stop_event.is_set():
             ret, frame = cap.read()

@@ -228,7 +228,6 @@ class Renderer:
     def render_archives(self):
         """Render the threat detection archives section"""
         st.subheader("Threat Detection Archives")
-        print(f"[RENDERER] {st.session_state}")
         if not st.session_state.archived_reports:
             st.info(
                 "No archived reports available. Threat detections will appear here."
@@ -291,7 +290,6 @@ class Renderer:
                             st.write(f"- {action}")
 
     # ------ SETTINGS PAGE ------
-    # TODO: Apply these settings to the backend
     def render_settings(self):
         """Render the settings section (Removed redundant detection config, kept storage/system info)"""
         st.subheader("System Configuration")
@@ -320,6 +318,7 @@ class Renderer:
         if st.button("Save Storage Settings"):
             new_storage_settings = {
                 "buffer_duration": buffer_duration,
+                # TODO: Apply these settings to the backend
                 "max_archive_size": max_archive_size,
                 "auto_delete_days": auto_delete_days,
                 "recording_quality": recording_quality,
@@ -341,21 +340,26 @@ class Renderer:
             st.write(f"- Current Threat Level: {st.session_state.threat_level:.1f}%")
 
     # ------ POPUP ALERTS ------
-    # TODO: Connect this w/ actual detection alerts
-    def render_popup_alert(self, alert):
-        """Render popup alert for threats"""
-        # Create popup using Streamlit's modal-like container
-        alert = st.session_state.popup_alert_data
-        with st.container():
-            st.markdown(strings.THREAT_ALERT(alert), unsafe_allow_html=True)
+    # TODO: Implement this
+    @st.fragment(run_every='1s')
+    def render_popup_manager(self):
+        """
+        An invisible component that checks for and displays popup alerts.
+        """
+        @st.dialog("🚨 Threat Detected!", dismissible=False)
+        def render_popup_alert(alert_data):
+            st.error(f"**Threat Type:** {alert_data.get('type', 'N/A').title()}")
+            st.metric("Confidence", f"{alert_data.get('confidence', 0):.1%}")
+            st.write(f"**Time:** {alert_data.get('timestamp', 'N/A').strftime('%Y-%m-%d %H:%M:%S')}")
+            if st.button("Dismiss", use_container_width=True):
+                self.dismiss_popup()
+                st.rerun()
 
-        # TODO: Include actual sound alert + notification logic + user interaction to dismiss popup
+        if st.session_state.get("show_popup_alert"):
+            render_popup_alert(st.session_state.popup_alert_data)
+    
+    def dismiss_popup(self):
+        """Callback to dismiss the popup alert."""
+        st.session_state.show_popup_alert = False
+        st.session_state.popup_alert_data = {}
 
-        # Auto-dismiss logic (Simplified)
-        if "alert_start_time" not in st.session_state:
-            st.session_state.alert_start_time = time.time()
-        if time.time() - st.session_state.alert_start_time > 10:
-            st.session_state.show_popup_alert = False
-            st.session_state.popup_alert_data = {}
-            if "alert_start_time" in st.session_state:
-                del st.session_state.alert_start_time

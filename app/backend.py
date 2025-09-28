@@ -64,6 +64,15 @@ class HomeEdgeBackend:
             report = self.reporter.process(detection_data)
             self.st_state.archived_reports.insert(0, report)
 
+            # --- TRIGGER POPUP ALERT ---
+            # Set state to show the popup on the next UI refresh
+            self.st_state.popup_alert_data = {
+                "type": detection_data.get("threat_type", "Unknown"),
+                "confidence": detection_data.get("confidence", 0),
+                "timestamp": report.get("timestamp"),
+            }
+            self.st_state.show_popup_alert = True
+
             # Keep only last 100 reports
             if len(self.st_state.archived_reports) > 100:
                 self.st_state.archived_reports.pop()

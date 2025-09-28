@@ -9,7 +9,8 @@ def initialize_session_state():
     # Storage settings
     if "storage_settings" not in st.session_state:
         st.session_state.storage_settings = {
-            "buffer_duration": 3,
+            "buffer_duration": 0.1,
+            # "buffer_duration": 3, # TODO: REINSTATE
             "max_archive_size": 10,
             "auto_delete_days": 30,
             "recording_quality": "Medium",

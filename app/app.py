@@ -2,7 +2,6 @@ import streamlit as st
 
 import strings
 from state_manager import initialize_session_state
-from app_logic import HomeEdgeApp
 from renderer import Renderer
 
 # --- Page Configuration ---
@@ -21,15 +20,13 @@ def main():
     initialize_session_state()
 
     # 2. Instantiate the logic and renderer classes.
-    app_logic = HomeEdgeApp()
     renderer = Renderer()
 
     # 3. Render the main page structure.
     renderer.render_home_page()
 
-    # 4. Conditionally render the popup alert outside the main flow.
-    if st.session_state.get("show_popup_alert"):
-        renderer.render_popup_alert(st.session_state.popup_alert_data)
+    # 4. Render the popup manager, which will handle showing alerts.
+    renderer.render_popup_manager()
 
 if __name__ == "__main__":
     main()
